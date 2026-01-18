@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>بوابة إدخال العلامات</title>
+    <!-- Google Fonts for modern Arabic typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600&family=Tajawal:wght@400;600&display=swap" rel="stylesheet">
+    <!-- Material Icons -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <!-- SheetJS library for generating Excel files -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #6200ea;
+            --accent-color: #03dac6;
+            --background-color: #f5f5f5;
+            --card-bg: #ffffff;
+            --border-radius: 8px;
+        }
+        body {
+            font-family: 'Tajawal', 'Cairo', sans-serif;
+            background-color: var(--background-color);
+            margin: 0;
+            padding: 0;
+            color: #333;
+        }
+        h1 {
+            text-align: center;
+            margin: 20px 0;
+        }
+        /* Stepper */
+        .stepper {
+            display: flex;
+            justify-content: space-between;
+            margin: 20px auto;
+            max-width: 800px;
+            list-style: none;
+            padding: 0;
+        }
+        .stepper li {
+            flex: 1;
+            position: relative;
+            text-align: center;
+            font-size: 14px;
+            color: #aaa;
+        }
+        .stepper li::before {
+            content: attr(data-step);
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            line-height: 24px;
+            border-radius: 50%;
+            background-color: #ddd;
+            color: #fff;
+            margin-bottom: 4px;
+        }
+        .stepper li.active {
+            color: var(--primary-color);
+        }
+        .stepper li.active::before {
+            background-color: var(--primary-color);
+        }
+        /* Cards */
+        .card {
+            background-color: var(--card-bg);
+            padding: 20px;
+            border-radius: var(--border-radius);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            margin: 10px auto;
+            max-width: 800px;
+        }
+        .card h2 {
+            font-size: 18px;
+            margin-top: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--primary-color);
+        }
+        /* Form rows inside cards */
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 4px;
+        }
+        select, input[type="text"], input[type="number"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        /* Checkbox group styling */
+        .checkbox-group {
+            display: flex;
+            flex-wrap: wrap;
+        }
+        .checkbox-group label {
+            margin-right: 15px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+        }
+        /* Buttons */
+        .btn {
+            display: inline-block;
+            padding: 8px 16px;
+            margin: 8px 4px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            color: #fff;
+        }
+        .btn-primary {
+            background-color: var(--primary-color);
+        }
+        .btn-accent {
+            background-color: var(--accent-color);
+        }
+        .btn-secondary {
+            background-color: #6c757d;
+        }
+        /* Table styling */
+        .table-container {
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th, td {
+            border: 1px solid #e0e0e0;
+            padding: 8px;
+            text-align: center;
+            min-width: 80px;
+        }
+        th {
+            background-color: #fafafa;
+            font-weight: 600;
+        }
+        /* Sticky first column for RTL */
+        th:first-child, td:first-child {
+            position: sticky;
+            right: 0;
+            background-color: var(--card-bg);
+            z-index: 1;
+        }
+        td[contenteditable="true"] {
+            background-color: #fff;
+        }
+        /* Highlight states */
+        td.missing {
+            background-color: #fdf6e3;
+        }
+        td.complete {
+            background-color: #e7f6e7;
+        }
+        td.invalid {
+            background-color: #ffe5e5;
+        }
+        /* Tooltips */
+        .tooltip {
+            position: relative;
+            cursor: pointer;
+        }
+        .tooltip:hover::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            right: 0;
+            top: 100%;
+            background-color: #333;
+            color: #fff;
+            padding: 6px 8px;
+            border-radius: 4px;
+            white-space: nowrap;
+            font-size: 12px;
+            margin-top: 4px;
+            z-index: 10;
+        }
+        /* Alert */
+        .alert {
+            padding: 8px 12px;
+            border-radius: 4px;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+        .alert-success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .alert-error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        /* Responsive behaviour */
+        @media (max-width: 600px) {
+            .stepper li {
+                font-size: 12px;
+            }
+            .card {
+                padding: 15px;
+            }
+            th, td {
+                padding: 6px;
+                min-width: 60px;
+            }
+            .btn {
+                width: 100%;
+                margin: 4px 0;
+            }
+        }
+
+        /* Auto-save indicator */
+        #saveIndicator {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: var(--accent-color);
+            color: #fff;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        /* Context menu for long press */
+        #contextMenu {
+            position: absolute;
+            background-color: #fff;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+            display: none;
+            z-index: 1000;
+        }
+        #contextMenu ul {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+        #contextMenu ul li {
+            padding: 8px 12px;
+            cursor: pointer;
+        }
+        #contextMenu ul li:hover {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+    <h1>بوابة العلامات</h1>
+    <ul class="stepper" id="stepper">
+        <li data-step="1" class="active">اختيار الصف والمادة</li>
+        <li data-step="2">تحديد أنواع العلامات</li>
+        <li data-step="3">إدخال الدرجات</li>
+    </ul>
+    <!-- Step 1: اختيار الصف والمادة -->
+    <div class="card step" id="step-1">
+        <h2><span class="material-icons">school</span> اختيار الصف والمادة</h2>
+        <div class="form-group">
+            <label for="sectionSelect">القسم</label>
+            <select id="sectionSelect">
+                <option value="">اختر القسم</option>
+                <option value="بنين">بنين</option>
+                <option value="بنات">بنات</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="classSelect">الشعبة الصفية</label>
+            <select id="classSelect">
+                <option value="">اختر الشعبة</option>
+                <option value="سابع">سابع</option>
+                <option value="ثامن">ثامن</option>
+                <option value="عاشر">عاشر</option>
+                <option value="حادي عشر">حادي عشر</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="subjectInput">اسم المادة</label>
+            <input type="text" id="subjectInput" placeholder="مثال: رياضيات" />
+        </div>
+        <div class="form-group">
+            <label for="teacherName">اسم المدرس</label>
+            <input type="text" id="teacherName" placeholder="مثال: أحمد" />
+        </div>
+        <button class="btn btn-primary" id="nextToStep2">التالي</button>
+    </div>
+    <!-- Step 2: تحديد أنواع العلامات -->
+    <div class="card step" id="step-2" style="display:none;">
+        <h2><span class="material-icons">list</span> تحديد أنواع العلامات</h2>
+        <div class="form-group tooltip" data-tooltip="حدد أنواع العلامات التي تريد تقييمها">
+            <label>أنواع العلامات</label>
+            <div class="checkbox-group" id="assessmentGroup">
+                <label class="tooltip" data-tooltip="مشاركة الطالب في الحصة"> <input type="checkbox" value="شفهي" /> شفهي</label>
+                <label class="tooltip" data-tooltip="الواجبات المنزلية"> <input type="checkbox" value="وظائف" /> وظائف</label>
+                <label class="tooltip" data-tooltip="العلامات العملية"> <input type="checkbox" value="عملي" /> عملي</label>
+                <label class="tooltip" data-tooltip="تقييمات قصيرة"> <input type="checkbox" value="مذاكرة" /> مذاكرة</label>
+                <label class="tooltip" data-tooltip="الامتحان النهائي أو الفصلي"> <input type="checkbox" value="امتحان" /> امتحان</label>
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="customColumnInput">إضافة عمود اختياري</label>
+            <input type="text" id="customColumnInput" placeholder="اسم العمود" />
+            <button class="btn btn-accent" id="addColumnBtn">إضافة</button>
+        </div>
+        <div>
+            <button class="btn btn-secondary" id="backToStep1">السابق</button>
+            <button class="btn btn-primary" id="nextToStep3">التالي</button>
+        </div>
+    </div>
+    <!-- Step 3: إدخال الدرجات -->
+    <div class="card step" id="step-3" style="display:none;">
+        <h2><span class="material-icons">edit</span> إدخال الدرجات</h2>
+        <div class="table-container">
+            <table id="gradesTable">
+                <thead>
+                    <tr id="tableHeader"></tr>
+                </thead>
+                <tbody id="tableBody"></tbody>
+            </table>
+        </div>
+        <div style="margin-top: 10px;">
+            <button class="btn btn-accent" id="addRowBtn">إضافة صف</button>
+        </div>
+        <div style="margin-top: 10px;">
+            <button class="btn btn-primary" id="exportBtn">تصدير إلى Excel</button>
+            <button class="btn btn-primary" id="sendBtn">إرسال إلى واتساب</button>
+            <button class="btn btn-secondary" id="backToStep2">السابق</button>
+        </div>
+    </div>
+    <!-- Alert container -->
+    <div id="alertContainer" style="max-width: 800px; margin: 10px auto;"></div>
+    <!-- Save indicator for auto-save notifications -->
+    <div id="saveIndicator">تم الحفظ تلقائياً</div>
+    <!-- Context menu for long press actions -->
+    <div id="contextMenu">
+        <ul>
+            <li id="clearCellOption">مسح محتوى الخلية</li>
+        </ul>
+    </div>
+    <script>
+        // بيانات الطلاب بناءً على الصف والقسم
+        const studentsData = {
+            "بنين": {
+                "سابع": [
+                    "احمد عبد الرحمن حريدين",
+                    "احمد فادي كيوان",
+                    "احمد محمد حريدين",
+                    "احمد ميلاد جابر",
+                    "اسلام احمد حريدين",
+                    "اليمان نورس كيوان",
+                    "ايهم امير الناطور",
+                    "ايهم معروف الناطور",
+                    "تركي رضا المطوي",
+                    "تيم باسل السبسبي",
+                    "حمزة موسى النجار",
+                    "خالد محمد البعير",
+                    "ذيب فراس أبو نقطة",
+                    "رامي عصام الرشدان",
+                    "رسلان منار الخشمان",
+                    "زيدون هشام الزعبي",
+                    "عبد الاله محمد خير حريدين",
+                    "عصام غالب الطيبي",
+                    "عمر بلال حريدين",
+                    "عمر خالد الزعبي",
+                    "مجد مفلح الربداوي",
+                    "محمد عصام الربداوي",
+                    "محمد منيف عيسى الزعبي",
+                    "محمود بشار حريدين",
+                    "مصطفى امجد عسكر",
+                    "مصطفى حسن قطمة",
+                    "نجيب محمد رضا الحريري",
+                    "نعيم احمد البردان",
+                    "همام باسل النابلسي",
+                    "يحيى احمد قطمة",
+                    "يمان مجد البردان"
+                ],
+                "ثامن": [
+                    "المعتصم بالله عرفا الشعابين",
+                    "المنتصر بالله محمد البردان",
+                    "أحمد حسان الربداوي",
+                    "أحمد خالد الصلخدي",
+                    "أسامة حيان الربداوي",
+                    "تقي الدين عدنان العدوي",
+                    "حسن سامر الحايك",
+                    "حمزة أحمد حريدين",
+                    "حمزة عبدالرحمن حريدين",
+                    "حمزة يوسف كيوان",
+                    "سراج أحمد حريدين",
+                    "سليمان إياد الربداوي",
+                    "شادي غسان عويمر",
+                    "عبادة عبدالرحيم البردان",
+                    "عبد الإله أحمد الصالح",
+                    "عبدالإله محمد خير حريدين",
+                    "عبدالرحمن فراس أبو نقطة",
+                    "عبدالرحمن نعيم الرواشدة",
+                    "عبدالله عبداللطيف الحوراني",
+                    "عبدالله محمود السرحان",
+                    "عبدالله وسيم السرحان",
+                    "عز الدين علي كيوان",
+                    "عمر عصام الربداوي",
+                    "عمر محمود الحايك",
+                    "عمران علاء الدين البيطاري",
+                    "عمران محمد خير حريدين",
+                    "محمد سفيان الصبحات",
+                    "محمد عرفا الشعابين",
+                    "محمود محمد البردان",
+                    "مصطفى محمود الناطور",
+                    "يحيى مراد الزعبي"
+                ],
+                "عاشر": [
+                    "احمد سالم الزعبي",
+                    "احمد محمد البردان",
+                    "احمد محمد خير البردان",
+                    "الحارث بلال أبو شنب",
+                    "اياس معاوية الزعبي",
+                    "إبراهيم فادي أبو رمحين",
+                    "إبراهيم محمد الزعبي",
+                    "براء محمد حريدين",
+                    "تميم عبد القادر حسون",
+                    "تيم خلدون الرشدان",
+                    "رامي  ياسر حريدين",
+                    "ريان محمد قنطرية",
+                    "زياد ماهر الحوراني",
+                    "زين قاسم أبو شنب",
+                    "شادي احمد الناطور",
+                    "عبد الرحمن بشير أبو نقطة",
+                    "عبد الرحمن محمد العدوي",
+                    "عبد الله عبد السلام الزعبي",
+                    "عبد الله عمار الربداوي",
+                    "عبد الله منذر كيوان",
+                    "عبد الله نورس كيوان",
+                    "عبيدة رافع الرشدان",
+                    "محمد انس حريدين",
+                    "محمد عماد الربداوي",
+                    "محمد عمار الزعبي",
+                    "محمد نديم حريدين",
+                    "محمد هشام حريدين",
+                    "محمد يمان عصام الزعبي",
+                    "محمود اشرف المصري",
+                    "معتصم ياسر حريدين",
+                    "معن هشام الزعبي",
+                    "همام عصام الربداوي",
+                    "وسام محمود الربداوي",
+                    "ياسين مازن المستريحي",
+                    "يزن معاوية الصبحات"
+                ],
+                "حادي عشر": [
+                    "احمد عبد اللطيف الحوراني",
+                    "انس زياد المعاني",
+                    "تيم ياسر حريدين",
+                    "خالد مشهور البردان",
+                    "عبادة عبدالرحمن البردان",
+                    "عبد الهادي محمد البردان",
+                    "عمار ياسر كيوان",
+                    "قاسم محمد يوسف",
+                    "معتز محمد خير الحوراني"
+                ]
+            },
+            "بنات": {
+                "سابع": [
+                    "ألمى أحمد البردان",
+                    "آية وسيم الخليل",
+                    "آية لؤي الرشدان",
+                    "إسلام معاوية الصبحات",
+                    "أسراء مازن الخليل",
+                    "بتول خالد شريتح",
+                    "بيسان إبراهيم العدوي",
+                    "تولين محمد أبو نقطة",
+                    "جنى منصور الحريدين",
+                    "جوري أحمد الصياح",
+                    "حلا موفق الزعبي",
+                    "دانا محمد نور السرحان",
+                    "رقية محمد خير حريدين",
+                    "رنده إياد الربداوي",
+                    "ريحان عبد المجيد العدوي",
+                    "ريماس خالد البردان",
+                    "رؤى مروان الربداوي",
+                    "ساره محمود السرحان",
+                    "ساره يوسف البردان",
+                    "شفاء محمد البردان",
+                    "شوق محمد حريدين",
+                    "لين محمد أبو نقطة",
+                    "لما محمد البردان",
+                    "لارا محمد زين البردان",
+                    "هاجر غسان الحايك"
+                ],
+                "ثامن": [
+                    "آية أمجد حريدين",
+                    "آية محمد الربداوي",
+                    "إباء باسل الصياح",
+                    "تيماء محمد خير البيطاري",
+                    "جنى محمد نور حريدين",
+                    "رفيف محمد البردان",
+                    "رفيف محمد خير العدوي",
+                    "رنا محمد خير البردان",
+                    "رنيم مالك الزعبي",
+                    "ريماس قاسم النجار",
+                    "شام مدين البردان",
+                    "شهد عبدالغفور العدوي",
+                    "ليمار منصور أبو نقطة",
+                    "مرام يزن البيطاري",
+                    "مريم محمد نور الزعبي",
+                    "مريم محمود العدوي",
+                    "ملاك حسين الزعبي",
+                    "مرح عامر الخليل",
+                    "نور حسان القيسي",
+                    "هويام مراد الزعبي",
+                    "ودق أحمد العدوي",
+                    "يقين رياض كيوان"
+                ],
+                "عاشر": [
+                    "آلاء محمود البردان",
+                    "أسماء أحمد البردان",
+                    "آية فراس ريشان الزعبي",
+                    "آلاء محمود السرحان",
+                    "بانه منير حريدين",
+                    "بروج قتادة حريدين",
+                    "تسنيم محمد عبدالله",
+                    "جنى محمد حريدين",
+                    "حكمت رائد الزعبي",
+                    "رنيم يزن البيطاري",
+                    "رهف محمد الزعبي",
+                    "ريم خلدون المستريحي",
+                    "رغد محمد برمو",
+                    "راما حسان الربداوي",
+                    "شذى عبدالرحيم شريتح",
+                    "صبا أسامة حريدين",
+                    "غزل محمد البردان",
+                    "ليلى محمد البردان"
+                ],
+                "حادي عشر": [
+                    "إسراء أحمد البردان",
+                    "آلاء عيسى الزعبي",
+                    "آية وسيم السرحان",
+                    "رنيم حسان الربداوي",
+                    "روعة محمود البردان",
+                    "رؤى وسيم كيوان",
+                    "رقية سميح البردان",
+                    "سارة عبدالرحيم الحوراني",
+                    "صفا أنس القهوجي",
+                    "صبى محمد الملحي",
+                    "ضحى محمود الحايك",
+                    "غزل علاء عواد",
+                    "ليمار عمر الناطور",
+                    "هبة آصف البردان"
+                ]
+            }
+        };
+        // هيكل الأعمدة والصفوف
+        let columns = ['اسم الطالب'];
+        let rows = [];
+        // الحد الأقصى للدرجة
+        const MAX_GRADE = 100;
+        // رقم واتساب الهدف
+        const WHATSAPP_NUMBER = '+963947993132';
+        // State for current step
+        let currentStep = 1;
+        // Helper: show alert
+        function showAlert(message, type = 'success') {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'alert ' + (type === 'success' ? 'alert-success' : 'alert-error');
+            alertDiv.textContent = message;
+            const container = document.getElementById('alertContainer');
+            container.innerHTML = '';
+            container.appendChild(alertDiv);
+            setTimeout(() => {
+                if (alertDiv.parentNode) alertDiv.parentNode.removeChild(alertDiv);
+            }, 4000);
+        }
+
+        // Show a temporary save indicator (auto-save feedback)
+        function showSaveIndicator() {
+            const indicator = document.getElementById('saveIndicator');
+            if (!indicator) return;
+            indicator.style.opacity = '1';
+            // Clear any previous timeout
+            if (indicator.dataset.timeoutId) {
+                clearTimeout(parseInt(indicator.dataset.timeoutId));
+            }
+            const timeoutId = setTimeout(() => {
+                indicator.style.opacity = '0';
+            }, 2000);
+            indicator.dataset.timeoutId = timeoutId;
+        }
+
+        // Context menu management for long press
+        let longPressTimer;
+        let contextCell; // store the current cell reference
+        function setupLongPress(td, rowIndex, colIndex) {
+            // For mouse events
+            td.addEventListener('mousedown', (e) => startLongPress(e, td));
+            td.addEventListener('mouseup', cancelLongPress);
+            td.addEventListener('mouseleave', cancelLongPress);
+            // For touch events (mobile)
+            td.addEventListener('touchstart', (e) => startLongPress(e, td));
+            td.addEventListener('touchend', cancelLongPress);
+            td.addEventListener('touchcancel', cancelLongPress);
+        }
+        function startLongPress(e, td) {
+            if (!td.isContentEditable) return;
+            cancelLongPress();
+            contextCell = td;
+            longPressTimer = setTimeout(() => {
+                showContextMenu(e);
+            }, 500); // 500ms threshold for long press
+        }
+        function cancelLongPress() {
+            if (longPressTimer) {
+                clearTimeout(longPressTimer);
+                longPressTimer = null;
+            }
+        }
+        function showContextMenu(event) {
+            const menu = document.getElementById('contextMenu');
+            if (!menu) return;
+            // Position menu based on pointer event
+            const x = (event.touches && event.touches[0]) ? event.touches[0].clientX : event.clientX;
+            const y = (event.touches && event.touches[0]) ? event.touches[0].clientY : event.clientY;
+            menu.style.top = (y + 5) + 'px';
+            menu.style.right = null;
+            menu.style.left = (x - menu.offsetWidth / 2) + 'px';
+            menu.style.display = 'block';
+            // Hide menu on next click outside
+            document.addEventListener('click', hideContextMenu);
+        }
+        function hideContextMenu() {
+            const menu = document.getElementById('contextMenu');
+            if (menu) menu.style.display = 'none';
+            document.removeEventListener('click', hideContextMenu);
+        }
+        // Step navigation
+        function showStep(step) {
+            currentStep = step;
+            document.querySelectorAll('.step').forEach(el => el.style.display = 'none');
+            const target = document.getElementById('step-' + step);
+            if (target) target.style.display = 'block';
+            // update stepper
+            document.querySelectorAll('.stepper li').forEach((li, index) => {
+                li.classList.toggle('active', index + 1 === step);
+            });
+        }
+        // Load students when reaching step 3 or when section/class changes
+        function loadStudents() {
+            const section = document.getElementById('sectionSelect').value;
+            const grade = document.getElementById('classSelect').value;
+            const names = (studentsData[section] && studentsData[section][grade]) ? studentsData[section][grade] : [];
+            rows = [];
+            names.forEach(name => {
+                const obj = {};
+                columns.forEach(col => obj[col] = '');
+                obj['اسم الطالب'] = name;
+                rows.push(obj);
+            });
+            renderTable();
+        }
+        // Render table
+        function renderTable() {
+            const header = document.getElementById('tableHeader');
+            header.innerHTML = '';
+            columns.forEach(col => {
+                const th = document.createElement('th');
+                th.textContent = col;
+                header.appendChild(th);
+            });
+            const body = document.getElementById('tableBody');
+            body.innerHTML = '';
+            rows.forEach((rowObj, rowIndex) => {
+                const tr = document.createElement('tr');
+                columns.forEach((col, colIndex) => {
+                    const td = document.createElement('td');
+                    td.contentEditable = col !== 'اسم الطالب';
+                    td.textContent = rowObj[col] || '';
+                    // Store indices for later use (context menu actions)
+                    td.dataset.rowIndex = rowIndex;
+                    td.dataset.colIndex = colIndex;
+                    // Add classes for statuses
+                    updateCellStatus(td);
+                    td.addEventListener('input', () => {
+                        rows[rowIndex][col] = td.textContent.trim();
+                        validateCell(td);
+                        autoSave();
+                    });
+                    td.addEventListener('keydown', (e) => handleNavigation(e, rowIndex, colIndex));
+                    // Enable long press for context menu actions
+                    setupLongPress(td, rowIndex, colIndex);
+                    tr.appendChild(td);
+                });
+                body.appendChild(tr);
+            });
+        }
+        // Update cell status classes based on content
+        function updateCellStatus(td) {
+            const value = td.textContent.trim();
+            td.classList.remove('missing', 'complete', 'invalid');
+            if (!td.isContentEditable) return;
+            if (value === '') {
+                td.classList.add('missing');
+            } else if (isNaN(parseFloat(value)) || parseFloat(value) < 0 || parseFloat(value) > MAX_GRADE) {
+                td.classList.add('invalid');
+            } else {
+                td.classList.add('complete');
+            }
+        }
+        // Validate a cell and update its class
+        function validateCell(td) {
+            updateCellStatus(td);
+        }
+        // Handle arrow key navigation within table
+        function handleNavigation(e, rowIndex, colIndex) {
+            const totalRows = rows.length;
+            const totalCols = columns.length;
+            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter'].includes(e.key)) {
+                e.preventDefault();
+                let newRow = rowIndex;
+                let newCol = colIndex;
+                switch (e.key) {
+                    case 'ArrowUp':
+                        newRow = Math.max(rowIndex - 1, 0);
+                        break;
+                    case 'ArrowDown':
+                    case 'Enter':
+                        newRow = Math.min(rowIndex + 1, totalRows - 1);
+                        break;
+                    case 'ArrowLeft':
+                        newCol = Math.min(colIndex + 1, totalCols - 1); // RTL
+                        break;
+                    case 'ArrowRight':
+                        newCol = Math.max(colIndex - 1, 0);
+                        break;
+                }
+                const targetCell = document.querySelector(`#tableBody tr:nth-child(${newRow + 1}) td:nth-child(${newCol + 1})`);
+                if (targetCell && targetCell.isContentEditable) {
+                    targetCell.focus();
+                }
+            }
+        }
+        // Add a new column
+        function addColumn(name) {
+            if (!name) return;
+            if (columns.includes(name)) {
+                showAlert('العمود موجود بالفعل', 'error');
+                return;
+            }
+            columns.push(name);
+            rows.forEach(row => row[name] = '');
+            renderTable();
+        }
+        // Update columns based on selected assessments
+        function updateAssessmentColumns() {
+            const checkboxes = document.querySelectorAll('#assessmentGroup input[type="checkbox"]');
+            // Remove existing assessment columns (except for existing custom ones)
+            const assessmentValues = Array.from(checkboxes).map(cb => cb.value);
+            columns = columns.filter(col => col === 'اسم الطالب' || !assessmentValues.includes(col));
+            checkboxes.forEach(cb => {
+                if (cb.checked && !columns.includes(cb.value)) {
+                    columns.push(cb.value);
+                }
+            });
+            // Ensure that custom columns remain if not part of assessments
+            renderTable();
+        }
+        // Add a new row
+        function addRow() {
+            const newRow = {};
+            columns.forEach(col => newRow[col] = '');
+            rows.push(newRow);
+            renderTable();
+        }
+        // Export to Excel
+        function exportToExcel() {
+            // Ensure there is data to export
+            if (rows.length === 0) {
+                showAlert('لا توجد بيانات للتصدير', 'error');
+                return;
+            }
+            // Gather details from form
+            const teacherName = document.getElementById('teacherName').value.trim() || '';
+            const subjectName = document.getElementById('subjectInput').value.trim() || '';
+            const section = document.getElementById('sectionSelect').value || '';
+            const grade = document.getElementById('classSelect').value || '';
+            // Prepare sheet data as array of arrays
+            // Create a row summarizing teacher, subject, section and class values.
+            // Each cell contains the label and value for better readability.
+            const detailRow = [
+                `اسم المدرس: ${teacherName || ''}`,
+                `المادة: ${subjectName || ''}`,
+                `القسم: ${section || ''}`,
+                `الشعبة: ${grade || ''}`
+            ];
+            // Copy column headers
+            const headerRow = columns.slice();
+            // Map row objects to arrays following column order
+            const dataRows = rows.map(r => columns.map(col => r[col]));
+            // Compose final sheet data: details row, blank row, header row, data rows
+            const sheetData = [];
+            sheetData.push(detailRow);
+            sheetData.push([]); // empty row for separation
+            sheetData.push(headerRow);
+            dataRows.forEach(r => sheetData.push(r));
+            // Create worksheet from array of arrays
+            const worksheet = XLSX.utils.aoa_to_sheet(sheetData);
+            // Compute and set column widths based on content length
+            const colWidths = [];
+            // Determine maximum width for each column in header and data
+            headerRow.forEach((col, idx) => {
+                let maxLen = String(col).length;
+                // Consider all rows in sheetData for width
+                sheetData.forEach(row => {
+                    const val = row[idx];
+                    if (val != null) {
+                        const len = String(val).length;
+                        if (len > maxLen) maxLen = len;
+                    }
+                });
+                // Cap width to 30 characters to avoid extremely wide columns
+                colWidths[idx] = { wch: Math.min(30, maxLen + 2) };
+            });
+            worksheet['!cols'] = colWidths;
+            // Create workbook and append sheet
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, 'Grades');
+            // Set workbook view to RTL (right-to-left)
+            workbook.Workbook = workbook.Workbook || {};
+            workbook.Workbook.Views = [{ RTL: true }];
+            // Generate file name with timestamp including section and grade for clarity
+            const now = new Date();
+            const timestamp = now.toISOString().replace(/[:\.-]/g, '').slice(0, 15);
+            let safeTeacher = teacherName || 'teacher';
+            let safeSubject = subjectName || 'subject';
+            let safeSection = section || 'section';
+            let safeGrade = grade || 'grade';
+            const fileName = `${safeTeacher}_${safeSubject}_${safeSection}_${safeGrade}_${timestamp}.xlsx`;
+            // Write file with cellStyles to ensure column properties are preserved【66539718419318†L170-L182】
+            XLSX.writeFile(workbook, fileName, { cellStyles: true });
+            showAlert('تم إنشاء ملف إكسل بنجاح: ' + fileName);
+            return fileName;
+        }
+        // Send to WhatsApp: open chat with message
+        function sendToWhatsApp() {
+            if (rows.length === 0) {
+                showAlert('لا توجد بيانات للإرسال', 'error');
+                return;
+            }
+            const teacherName = document.getElementById('teacherName').value.trim();
+            const subjectName = document.getElementById('subjectInput').value.trim();
+            if (!teacherName || !subjectName) {
+                showAlert('يرجى إدخال اسم المدرس واسم المادة', 'error');
+                return;
+            }
+            const fileName = exportToExcel();
+            const section = document.getElementById('sectionSelect').value;
+            const grade = document.getElementById('classSelect').value;
+            const message = `تقرير العلامات للطلاب في مادة ${subjectName}\nالقسم: ${section}\nالشعبة: ${grade}\nالمدرس: ${teacherName}\nتم إنشاء ملف: ${fileName}. يرجى إرفاقه في المحادثة.`;
+            const phoneNumber = WHATSAPP_NUMBER.replace(/\+/g, '');
+            const url = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
+            window.open(url, '_blank');
+            showAlert('تم إنشاء الملف وفتح واتساب لإرسال الرسالة. يرجى إرفاق الملف يدوياً.', 'success');
+        }
+        // Auto-save to localStorage
+        function autoSave() {
+            const data = { columns, rows };
+            localStorage.setItem('gradesData', JSON.stringify(data));
+            // Show a subtle saved indicator without interrupting the user
+            showSaveIndicator();
+        }
+        // Restore from localStorage if available
+        function restoreData() {
+            const saved = localStorage.getItem('gradesData');
+            if (saved) {
+                try {
+                    const parsed = JSON.parse(saved);
+                    if (parsed.columns && parsed.rows) {
+                        columns = parsed.columns;
+                        rows = parsed.rows;
+                        renderTable();
+                    }
+                } catch (e) {
+                    console.error('Restore error', e);
+                }
+            }
+        }
+        // Event listeners for navigation buttons
+        document.getElementById('nextToStep2').addEventListener('click', () => {
+            // Validate step 1 fields
+            const section = document.getElementById('sectionSelect').value;
+            const grade = document.getElementById('classSelect').value;
+            const subject = document.getElementById('subjectInput').value.trim();
+            const teacher = document.getElementById('teacherName').value.trim();
+            if (!section || !grade || !subject || !teacher) {
+                showAlert('يرجى ملء جميع الحقول أولاً', 'error');
+                return;
+            }
+            showStep(2);
+        });
+        document.getElementById('backToStep1').addEventListener('click', () => {
+            showStep(1);
+        });
+        document.getElementById('nextToStep3').addEventListener('click', () => {
+            // Update columns based on selected assessments before loading students
+            updateAssessmentColumns();
+            // Load student rows
+            loadStudents();
+            showStep(3);
+        });
+        document.getElementById('backToStep2').addEventListener('click', () => {
+            showStep(2);
+        });
+        // Add column button
+        document.getElementById('addColumnBtn').addEventListener('click', () => {
+            const name = document.getElementById('customColumnInput').value.trim();
+            if (name) {
+                addColumn(name);
+                document.getElementById('customColumnInput').value = '';
+            }
+        });
+        // Update assessment columns when checkboxes change
+        document.querySelectorAll('#assessmentGroup input[type="checkbox"]').forEach(cb => {
+            cb.addEventListener('change', updateAssessmentColumns);
+        });
+        // Add row button
+        document.getElementById('addRowBtn').addEventListener('click', addRow);
+        // Export and send buttons
+        document.getElementById('exportBtn').addEventListener('click', exportToExcel);
+        document.getElementById('sendBtn').addEventListener('click', sendToWhatsApp);
+        // Try to restore saved data on load
+        document.addEventListener('DOMContentLoaded', () => {
+            restoreData();
+            showStep(1);
+        });
+
+        // Clear cell option in context menu
+        document.getElementById('clearCellOption').addEventListener('click', () => {
+            if (contextCell) {
+                const rowIndex = parseInt(contextCell.dataset.rowIndex);
+                const colIndex = parseInt(contextCell.dataset.colIndex);
+                const colName = columns[colIndex];
+                if (!isNaN(rowIndex) && !isNaN(colIndex)) {
+                    rows[rowIndex][colName] = '';
+                    contextCell.textContent = '';
+                    validateCell(contextCell);
+                    autoSave();
+                }
+                hideContextMenu();
+            }
+        });
+
+        // Allow navigation via stepper clicks
+        document.getElementById('stepper').addEventListener('click', (e) => {
+            // Determine which step indicator was clicked
+            const li = e.target.closest('li');
+            if (!li) return;
+            const children = Array.from(document.querySelectorAll('#stepper li'));
+            const idx = children.indexOf(li);
+            if (idx >= 0) {
+                // Only allow moving backward to already visited steps or staying on current step
+                if (idx + 1 < currentStep) {
+                    showStep(idx + 1);
+                }
+            }
+        });
+    </script>
+</body>
+</html>
