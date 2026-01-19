@@ -145,33 +145,6 @@
             box-sizing: border-box;
         }
 
-        /* Login container styling */
-        #loginContainer {
-            max-width: 400px;
-            margin: 100px auto;
-            text-align: center;
-            background-color: var(--card-bg);
-            padding: 20px;
-            border-radius: var(--border-radius);
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-        #loginContainer input[type="password"] {
-            width: 100%;
-            padding: 8px;
-            margin-bottom: 10px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            box-sizing: border-box;
-        }
-        #loginContainer button {
-            background-color: var(--primary-color);
-            color: #fff;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
-        }
     </style>
 </head>
 <body>
@@ -182,13 +155,6 @@
             <input type="password" id="adminPasswordInput" placeholder="كلمة المرور" />
             <button class="btn btn-primary" id="adminLoginBtn">دخول</button>
         </div>
-    </div>
-    <!-- Login Container -->
-    <div id="loginContainer">
-        <h2>الدخول إلى لوحة التحكم</h2>
-        <input type="password" id="adminPassword" placeholder="أدخل كلمة المرور" />
-        <button id="loginBtn">دخول</button>
-        <p id="loginError" style="color: red; display: none;">كلمة المرور غير صحيحة</p>
     </div>
     <!-- Admin Content, hidden until login -->
     <div id="adminContent" style="display:none;">
@@ -465,16 +431,24 @@
 
         // Password configuration and authorization checks
         const ADMIN_PASSWORD = 'K123123123';
+        /**
+         * Check admin authorization on page load. If the admin was previously
+         * authorized (adminAuthorized flag in localStorage), hide the login
+         * overlay and display the admin content. Otherwise, show the overlay.
+         */
         function checkAuthorization() {
-            const loginContainer = document.getElementById('loginContainer');
+            const overlay = document.getElementById('loginOverlay');
             const adminContent = document.getElementById('adminContent');
             if (localStorage.getItem('adminAuthorized') === 'true') {
-                if (loginContainer) loginContainer.style.display = 'none';
+                // Hide login overlay and show admin controls
+                if (overlay) overlay.style.display = 'none';
                 if (adminContent) adminContent.style.display = '';
-                // Populate grades after authorization to ensure options are loaded
+                // Populate grades and load WhatsApp number
                 populateGrades();
+                loadWhatsAppNumber();
             } else {
-                if (loginContainer) loginContainer.style.display = '';
+                // Show overlay and hide admin content
+                if (overlay) overlay.style.display = 'flex';
                 if (adminContent) adminContent.style.display = 'none';
             }
         }
@@ -619,12 +593,21 @@
         // Delete grade button
         document.getElementById('deleteGradeBtn').addEventListener('click', deleteGrade);
 
-        // Login check for admin page
+        // Login button handler. Sets the adminAuthorized flag on success and
+        // hides the overlay while showing the admin panel.
         document.getElementById('adminLoginBtn').addEventListener('click', () => {
             const pwd = document.getElementById('adminPasswordInput').value;
             if (pwd === ADMIN_PASSWORD) {
-                // Hide login overlay
-                document.getElementById('loginOverlay').style.display = 'none';
+                // Set authorization flag so subsequent visits skip login
+                localStorage.setItem('adminAuthorized', 'true');
+                // Hide the overlay and display admin content
+                const overlay = document.getElementById('loginOverlay');
+                const adminContent = document.getElementById('adminContent');
+                if (overlay) overlay.style.display = 'none';
+                if (adminContent) adminContent.style.display = '';
+                // Initialize lists and values
+                populateGrades();
+                loadWhatsAppNumber();
             } else {
                 alert('كلمة المرور غير صحيحة');
             }
@@ -659,10 +642,10 @@
             }
         }
 
-        // Initialize
-        populateGrades();
-        // Load WhatsApp number
-        loadWhatsAppNumber();
+        // Initialize on page load. This will check if the admin is authorized
+        // and show or hide the login overlay accordingly. When authorized,
+        // the function will populate the grades and load the WhatsApp number.
+        checkAuthorization();
     </script>
 </body>
 </html>
