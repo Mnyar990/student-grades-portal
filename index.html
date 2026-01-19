@@ -905,6 +905,7 @@
             const fileName = exportToExcel();
             const section = document.getElementById('sectionSelect').value;
             const grade = document.getElementById('classSelect').value;
+
             const message = `تقرير العلامات للطلاب في مادة ${subjectName}\nالقسم: ${section}\nالشعبة: ${grade}\nالمدرس: ${teacherName}\nتم إنشاء ملف: ${fileName}. يرجى إرفاقه في المحادثة.`;
             const phoneNumber = WHATSAPP_NUMBER.replace(/\+/g, '');
             const url = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
@@ -985,6 +986,24 @@
             populateClassSelect();
             // Show initial step
             showStep(1);
+
+                    // Listen for changes in localStorage (e.g., when admin page updates studentsData)
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'studentsData') {
+                try {
+                    if (e.newValue) {
+                        studentsData = JSON.parse(e.newValue);
+                    }
+                } catch (err) {
+                    console.error('Error parsing updated studentsData from storage', err);
+                }
+                populateClassSelect();
+            }
+            if (e.key === 'whatsappNumber') {
+                // sendToWhatsApp will read directly from localStorage when invoked
+            }
+        });
+
         });
 
         // Update class selection dynamically when section changes
