@@ -582,7 +582,8 @@
         // الحد الأقصى للدرجة
         const MAX_GRADE = 100;
         // رقم واتساب الهدف
-        const WHATSAPP_NUMBER = '+963947993132';
+        // Load WhatsApp number from localStorage or fallback to default
+        const WHATSAPP_NUMBER = localStorage.getItem('whatsappNumber') || '+963947993132';
         // State for current step
         let currentStep = 1;
         // Helper: show alert

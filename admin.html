@@ -113,14 +113,90 @@
                 margin: 4px 0;
             }
         }
+
+        /* Login overlay */
+        #loginOverlay {
+            position: fixed;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            background-color: rgba(0, 0, 0, 0.4);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+        #loginBox {
+            background-color: var(--card-bg);
+            padding: 20px;
+            border-radius: var(--border-radius);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+        }
+        #loginBox input {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        /* Login container styling */
+        #loginContainer {
+            max-width: 400px;
+            margin: 100px auto;
+            text-align: center;
+            background-color: var(--card-bg);
+            padding: 20px;
+            border-radius: var(--border-radius);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        #loginContainer input[type="password"] {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        #loginContainer button {
+            background-color: var(--primary-color);
+            color: #fff;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
     </style>
 </head>
 <body>
-    <h1>إدارة الطلاب والصفوف</h1>
-    <div style="text-align: right; margin: 0 20px 10px;">
-        <a href="index.html" style="color: var(--accent-color); text-decoration: none; font-size: 14px;">العودة إلى البوابة</a>
+    <!-- Login overlay for admin access -->
+    <div id="loginOverlay">
+        <div id="loginBox">
+            <h2>تسجيل الدخول</h2>
+            <input type="password" id="adminPasswordInput" placeholder="كلمة المرور" />
+            <button class="btn btn-primary" id="adminLoginBtn">دخول</button>
+        </div>
     </div>
-    <!-- إدارة الصفوف -->
+    <!-- Login Container -->
+    <div id="loginContainer">
+        <h2>الدخول إلى لوحة التحكم</h2>
+        <input type="password" id="adminPassword" placeholder="أدخل كلمة المرور" />
+        <button id="loginBtn">دخول</button>
+        <p id="loginError" style="color: red; display: none;">كلمة المرور غير صحيحة</p>
+    </div>
+    <!-- Admin Content, hidden until login -->
+    <div id="adminContent" style="display:none;">
+        <h1>إدارة الطلاب والصفوف</h1>
+        <div style="text-align: right; margin: 0 20px 10px;">
+            <a href="index.html" style="color: var(--accent-color); text-decoration: none; font-size: 14px;">العودة إلى البوابة</a>
+        </div>
+        <!-- إدارة الصفوف -->
     <div class="card">
         <h2><span class="material-icons">class</span> إدارة الصفوف</h2>
         <div class="form-group">
@@ -137,9 +213,17 @@
                 <option value="">اختر الشعبة</option>
             </select>
             <button class="btn btn-accent" id="renameGradeBtn" style="margin-top: 8px;">تعديل اسم الصف</button>
+            <!-- Delete grade button -->
+            <button class="btn btn-danger" id="deleteGradeBtn" style="margin-top: 8px;">حذف الصف</button>
         </div>
         <div class="form-group">
             <button class="btn btn-primary" id="addGradeBtn">إضافة صف جديد</button>
+        </div>
+
+        <!-- WhatsApp number configuration -->
+        <div class="form-group">
+            <label for="whatsappInput">رقم واتساب لإرسال الملفات</label>
+            <input type="text" id="whatsappInput" placeholder="+963947993132" />
         </div>
     </div>
     <!-- إدارة الطلاب -->
@@ -156,7 +240,11 @@
     <div class="card" style="text-align: center;">
         <button class="btn btn-primary" id="saveAdminBtn">حفظ التغييرات</button>
     </div>
+    </div> <!-- End of adminContent -->
     <script>
+        // كلمة المرور للوصول إلى لوحة التحكم
+        const ADMIN_PASSWORD = 'K123123123';
+
         // البيانات الافتراضية للطلاب والصفوف عند عدم وجود بيانات في LocalStorage
         const defaultStudentsData = {
             "بنين": {
@@ -375,6 +463,21 @@
             studentsData = JSON.parse(JSON.stringify(defaultStudentsData));
         }
 
+        // Password configuration and authorization checks
+        const ADMIN_PASSWORD = 'K123123123';
+        function checkAuthorization() {
+            const loginContainer = document.getElementById('loginContainer');
+            const adminContent = document.getElementById('adminContent');
+            if (localStorage.getItem('adminAuthorized') === 'true') {
+                if (loginContainer) loginContainer.style.display = 'none';
+                if (adminContent) adminContent.style.display = '';
+                // Populate grades after authorization to ensure options are loaded
+                populateGrades();
+            } else {
+                if (loginContainer) loginContainer.style.display = '';
+                if (adminContent) adminContent.style.display = 'none';
+            }
+        }
         const adminSectionSelect = document.getElementById('adminSectionSelect');
         const adminGradeSelect = document.getElementById('adminGradeSelect');
         const studentsListDiv = document.getElementById('studentsList');
@@ -488,7 +591,13 @@
         // Save data to LocalStorage
         function saveData() {
             try {
+                // Save students data
                 localStorage.setItem('studentsData', JSON.stringify(studentsData));
+                // Save WhatsApp number if entered
+                const whatsappInput = document.getElementById('whatsappInput');
+                if (whatsappInput && whatsappInput.value.trim()) {
+                    localStorage.setItem('whatsappNumber', whatsappInput.value.trim());
+                }
                 alert('تم حفظ التغييرات بنجاح');
             } catch (err) {
                 alert('حدث خطأ أثناء الحفظ');
@@ -507,8 +616,53 @@
         document.getElementById('addStudentBtn').addEventListener('click', addStudent);
         document.getElementById('saveAdminBtn').addEventListener('click', saveData);
 
+        // Delete grade button
+        document.getElementById('deleteGradeBtn').addEventListener('click', deleteGrade);
+
+        // Login check for admin page
+        document.getElementById('adminLoginBtn').addEventListener('click', () => {
+            const pwd = document.getElementById('adminPasswordInput').value;
+            if (pwd === ADMIN_PASSWORD) {
+                // Hide login overlay
+                document.getElementById('loginOverlay').style.display = 'none';
+            } else {
+                alert('كلمة المرور غير صحيحة');
+            }
+        });
+
+        // Delete grade function
+        function deleteGrade() {
+            const section = adminSectionSelect.value;
+            const grade = adminGradeSelect.value;
+            if (!section || !grade) {
+                alert('اختر القسم والشعبة أولاً');
+                return;
+            }
+            if (confirm('هل أنت متأكد من حذف الصف مع جميع الطلاب؟')) {
+                delete studentsData[section][grade];
+                populateGrades();
+                adminGradeSelect.value = '';
+                populateStudents();
+            }
+        }
+
+        // Load WhatsApp number into input field
+        function loadWhatsAppNumber() {
+            const storedNumber = localStorage.getItem('whatsappNumber');
+            const input = document.getElementById('whatsappInput');
+            if (input) {
+                if (storedNumber) {
+                    input.value = storedNumber;
+                } else {
+                    input.value = '+963947993132';
+                }
+            }
+        }
+
         // Initialize
         populateGrades();
+        // Load WhatsApp number
+        loadWhatsAppNumber();
     </script>
 </body>
 </html>
