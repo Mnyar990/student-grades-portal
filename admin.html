@@ -420,13 +420,28 @@
             }
         };
 
-        // تحميل أو تهيئة بيانات الطلاب من LocalStorage
+        // رابط ملف البيانات الخارجي الذي يحتوي على الصفوف والأسماء.
+        // يمكن تعديل هذا الملف بشكل مستقل لتحديث البيانات.
+        const DATA_URL = 'students_data.json';
+
+        // متغير سيحمل بيانات الطلاب بعد التحميل من الملف أو من LocalStorage
         let studentsData;
-        try {
-            const stored = localStorage.getItem('studentsData');
-            studentsData = stored ? JSON.parse(stored) : JSON.parse(JSON.stringify(defaultStudentsData));
-        } catch (err) {
-            studentsData = JSON.parse(JSON.stringify(defaultStudentsData));
+
+        /**
+         * تحميل بيانات الطلاب من ملف JSON منفصل.
+         * نستخدم fetch لقراءة الملف وتحويله إلى كائن جافاسكريبت.
+         * إذا فشل التحميل لسبب ما، نعيد كائناً فارغاً.
+         */
+        async function loadStudentsData() {
+            try {
+                const response = await fetch(DATA_URL + '?v=' + Date.now());
+                if (!response.ok) throw new Error('HTTP ' + response.status);
+                const data = await response.json();
+                return data;
+            } catch (err) {
+                console.error('فشل تحميل ملف البيانات:', err);
+                return {};
+            }
         }
 
         // Password configuration and authorization checks
@@ -489,6 +504,12 @@
                     delBtn.addEventListener('click', () => {
                         if (confirm('هل أنت متأكد من حذف الطالب؟')) {
                             studentsData[section][grade].splice(index, 1);
+                            // Persist changes immediately
+                            try {
+                                localStorage.setItem('studentsData', JSON.stringify(studentsData));
+                            } catch (err) {
+                                console.error('Error saving studentsData after deleting student', err);
+                            }
                             populateStudents();
                         }
                     });
@@ -514,7 +535,15 @@
                 alert('الصف موجود مسبقاً');
                 return;
             }
+            // Create a new grade key with empty student list
             studentsData[section][newGrade] = [];
+            // Immediately persist to localStorage so other pages (e.g., portal) reflect new grades
+            try {
+                localStorage.setItem('studentsData', JSON.stringify(studentsData));
+            } catch (err) {
+                console.error('Error saving studentsData after adding grade', err);
+            }
+            // Refresh UI to show the new grade
             populateGrades();
             adminGradeSelect.value = newGrade;
             populateStudents();
@@ -536,8 +565,15 @@
                 return;
             }
             // Copy students and delete old key
+            // Copy students to new grade name and delete old key
             studentsData[section][newName] = studentsData[section][oldName];
             delete studentsData[section][oldName];
+            // Persist changes immediately
+            try {
+                localStorage.setItem('studentsData', JSON.stringify(studentsData));
+            } catch (err) {
+                console.error('Error saving studentsData after renaming grade', err);
+            }
             populateGrades();
             adminGradeSelect.value = newName;
             populateStudents();
@@ -557,6 +593,12 @@
                 studentsData[section][grade] = [];
             }
             studentsData[section][grade].push(name);
+            // Persist changes immediately
+            try {
+                localStorage.setItem('studentsData', JSON.stringify(studentsData));
+            } catch (err) {
+                console.error('Error saving studentsData after adding student', err);
+            }
             newStudentInput.value = '';
             populateStudents();
         }
@@ -571,9 +613,33 @@
                 if (whatsappInput && whatsappInput.value.trim()) {
                     localStorage.setItem('whatsappNumber', whatsappInput.value.trim());
                 }
-                alert('تم حفظ التغييرات بنجاح');
+                // بعد الحفظ في LocalStorage، يمكن تحميل نسخة محدثة من ملف البيانات
+                downloadDataFile();
+                alert('تم حفظ التغييرات بنجاح، وتم تنزيل ملف البيانات المحدثة');
             } catch (err) {
                 alert('حدث خطأ أثناء الحفظ');
+            }
+        }
+
+        /**
+         * تنزيل ملف students_data.json المحدث. هذا يساعد في حفظ البيانات
+         * المتغيرة في ملف منفصل يمكن رفعه إلى المستودع ليصبح المرجع الرسمي
+         * للبوابة ولوحة التحكم وأي واجهة أخرى.
+         */
+        function downloadDataFile() {
+            try {
+                const json = JSON.stringify(studentsData, null, 2);
+                const blob = new Blob([json], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'students_data.json';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            } catch (err) {
+                console.error('تعذر تنزيل ملف البيانات', err);
             }
         }
 
@@ -621,7 +687,13 @@
                 return;
             }
             if (confirm('هل أنت متأكد من حذف الصف مع جميع الطلاب؟')) {
+                // Remove the grade and persist changes
                 delete studentsData[section][grade];
+                try {
+                    localStorage.setItem('studentsData', JSON.stringify(studentsData));
+                } catch (err) {
+                    console.error('Error saving studentsData after deleting grade', err);
+                }
                 populateGrades();
                 adminGradeSelect.value = '';
                 populateStudents();
@@ -641,10 +713,30 @@
             }
         }
 
-        // Initialize on page load. This will check if the admin is authorized
-        // and show or hide the login overlay accordingly. When authorized,
-        // the function will populate the grades and load the WhatsApp number.
-        checkAuthorization();
+        // عند تحميل الصفحة، نقوم بقراءة ملف البيانات أو المخزن المحلي، ثم
+        // نهيئ studentsData قبل التحقق من صلاحية الإدارة وعرض عناصر التحكم.
+        loadStudentsData().then(fileData => {
+            let stored = null;
+            try {
+                const storedData = localStorage.getItem('studentsData');
+                if (storedData) {
+                    stored = JSON.parse(storedData);
+                }
+            } catch (e) {
+                stored = null;
+            }
+            studentsData = stored || fileData;
+            // إذا لم تكن هناك بيانات محفوظة، نحفظ البيانات المستوردة في LocalStorage للاستخدام المستقبلي
+            if (!stored) {
+                try {
+                    localStorage.setItem('studentsData', JSON.stringify(studentsData));
+                } catch (err) {
+                    console.warn('تعذر حفظ البيانات في LocalStorage:', err);
+                }
+            }
+            // بعد تحميل البيانات وتعيين studentsData، نفحص صلاحية الدخول
+            checkAuthorization();
+        });
     </script>
 </body>
 </html>

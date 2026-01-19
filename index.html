@@ -352,18 +352,36 @@
         </ul>
     </div>
     <script>
-        // بيانات الطلاب بناءً على الصف والقسم
-        // نحاول تحميل بيانات الطلاب من LocalStorage إذا توفرت، وإلا نستخدم البيانات الافتراضية
+        // رابط ملف البيانات الخارجي الذي يحتوي على الصفوف والأسماء.
+        // يمكن تعديل هذا الملف بشكل مستقل لتحديث البيانات.
+        const DATA_URL = 'students_data.json';
+
+        // متغير سيحمل بيانات الطلاب بعد التحميل من الملف أو من LocalStorage
         let studentsData = undefined;
-        try {
-            const storedData = localStorage.getItem('studentsData');
-            if (storedData) {
-                studentsData = JSON.parse(storedData);
+
+        /**
+         * تحميل بيانات الطلاب من ملف JSON منفصل.
+         * نستخدم fetch لقراءة الملف وتحويله إلى كائن جافاسكريبت.
+         * إذا فشل التحميل لسبب ما، نعيد كائناً فارغاً.
+         */
+        async function loadStudentsData() {
+            try {
+                const response = await fetch(DATA_URL + '?v=' + Date.now());
+                if (!response.ok) throw new Error('HTTP ' + response.status);
+                const data = await response.json();
+                return data;
+            } catch (err) {
+                console.error('فشل تحميل ملف البيانات:', err);
+                return {};
             }
-        } catch (e) {
-            // في حالة حدوث خطأ أثناء القراءة أو التحويل، نتجاهل ونستخدم البيانات الافتراضية
-            studentsData = undefined;
         }
+
+        // نحاول تحميل بيانات الطلاب من LocalStorage إذا توفرت، وإلا نستخدم البيانات من الملف الخارجي
+        // سيُستدعى تحميل البيانات في حدث DOMContentLoaded قبل البدء باستخدام studentsData
+
+        // الكائن studentsData سيملأ لاحقًا بعد تحميل البيانات أو القراءة من LocalStorage
+
+        // في حالة عدم وجود بيانات، سنستخدم البيانات الافتراضية الموجودة أدناه كاحتياط
         if (!studentsData) {
             studentsData = {
             "بنين": {
@@ -905,9 +923,10 @@
             const fileName = exportToExcel();
             const section = document.getElementById('sectionSelect').value;
             const grade = document.getElementById('classSelect').value;
-
             const message = `تقرير العلامات للطلاب في مادة ${subjectName}\nالقسم: ${section}\nالشعبة: ${grade}\nالمدرس: ${teacherName}\nتم إنشاء ملف: ${fileName}. يرجى إرفاقه في المحادثة.`;
-            const phoneNumber = WHATSAPP_NUMBER.replace(/\+/g, '');
+            // Retrieve latest WhatsApp number from localStorage to support updates from admin page
+            const waNumber = localStorage.getItem('whatsappNumber') || WHATSAPP_NUMBER;
+            const phoneNumber = waNumber.replace(/\+/g, '');
             const url = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
             window.open(url, '_blank');
             showAlert('تم إنشاء الملف وفتح واتساب لإرسال الرسالة. يرجى إرفاق الملف يدوياً.', 'success');
@@ -978,16 +997,40 @@
         // Export and send buttons
         document.getElementById('exportBtn').addEventListener('click', exportToExcel);
         document.getElementById('sendBtn').addEventListener('click', sendToWhatsApp);
-        // Try to restore saved data on load
+        // عند تحميل الصفحة، نقوم بقراءة ملف البيانات أو المخزن المحلي، ثم
+        // نهيئ studentsData ونسترجع أي بيانات محفوظة، وبعدها نعرض الخطوة الأولى.
         document.addEventListener('DOMContentLoaded', () => {
-            // Restore previous grades table if saved
-            restoreData();
-            // Populate class dropdown based on current section
-            populateClassSelect();
-            // Show initial step
-            showStep(1);
+            loadStudentsData().then(fileData => {
+                let stored = null;
+                try {
+                    const storedData = localStorage.getItem('studentsData');
+                    if (storedData) {
+                        stored = JSON.parse(storedData);
+                    }
+                } catch (e) {
+                    stored = null;
+                }
+                studentsData = stored || fileData;
+                // إذا لم تكن هناك بيانات محفوظة، نحفظ البيانات المستوردة في LocalStorage للاستخدام المستقبلي
+                if (!stored) {
+                    try {
+                        localStorage.setItem('studentsData', JSON.stringify(studentsData));
+                    } catch (err) {
+                        console.warn('تعذر حفظ البيانات في LocalStorage:', err);
+                    }
+                }
+                // استرجاع الجدول السابق إن وجد
+                restoreData();
+                // تعبئة قائمة الصفوف بناءً على القسم المختار
+                populateClassSelect();
+                // عرض الخطوة الأولى
+                showStep(1);
+            });
+        });
 
-                    // Listen for changes in localStorage (e.g., when admin page updates studentsData)
+        // Listen for changes in localStorage (e.g., when admin page updates studentsData)
+        // This event triggers in other tabs/windows of the same origin. When the
+        // studentsData key changes, reload it and refresh the class dropdown.
         window.addEventListener('storage', (e) => {
             if (e.key === 'studentsData') {
                 try {
@@ -997,13 +1040,16 @@
                 } catch (err) {
                     console.error('Error parsing updated studentsData from storage', err);
                 }
+                // Update grade selection options based on the new data
                 populateClassSelect();
             }
+            // Update WhatsApp number if changed
             if (e.key === 'whatsappNumber') {
-                // sendToWhatsApp will read directly from localStorage when invoked
+                // Reload WhatsApp number constant; note that constants cannot be re-assigned,
+                // but we can update the variable if we define WHATSAPP_NUMBER as let. For
+                // backward compatibility, we just update the message; sendToWhatsApp uses
+                // localStorage directly when building URL.
             }
-        });
-
         });
 
         // Update class selection dynamically when section changes
