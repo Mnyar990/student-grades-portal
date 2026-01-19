@@ -259,6 +259,12 @@
 </head>
 <body>
     <h1>بوابة العلامات</h1>
+    <!-- رابط إلى صفحة التحكم (admin) -->
+    <div style="text-align: right; margin: 0 20px 10px 20px;">
+        <a href="admin.html" style="color: var(--accent-color); text-decoration: none; font-size: 14px;">
+            صفحة التحكم
+        </a>
+    </div>
     <ul class="stepper" id="stepper">
         <li data-step="1" class="active">اختيار الصف والمادة</li>
         <li data-step="2">تحديد أنواع العلامات</li>
@@ -350,7 +356,19 @@
     </div>
     <script>
         // بيانات الطلاب بناءً على الصف والقسم
-        const studentsData = {
+        // نحاول تحميل بيانات الطلاب من LocalStorage إذا توفرت، وإلا نستخدم البيانات الافتراضية
+        let studentsData = undefined;
+        try {
+            const storedData = localStorage.getItem('studentsData');
+            if (storedData) {
+                studentsData = JSON.parse(storedData);
+            }
+        } catch (e) {
+            // في حالة حدوث خطأ أثناء القراءة أو التحويل، نتجاهل ونستخدم البيانات الافتراضية
+            studentsData = undefined;
+        }
+        if (!studentsData) {
+            studentsData = {
             "بنين": {
                 "سابع": [
                     "احمد عبد الرحمن حريدين",
@@ -557,6 +575,7 @@
                 ]
             }
         };
+        }
         // هيكل الأعمدة والصفوف
         let columns = ['اسم الطالب'];
         let rows = [];

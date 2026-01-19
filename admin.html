@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>صفحة التحكم</title>
+    <!-- Google Fonts for modern Arabic typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600&family=Tajawal:wght@400;600&display=swap" rel="stylesheet">
+    <!-- Material Icons -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #6200ea;
+            --accent-color: #03dac6;
+            --background-color: #f5f5f5;
+            --card-bg: #ffffff;
+            --border-radius: 8px;
+        }
+        body {
+            font-family: 'Tajawal', 'Cairo', sans-serif;
+            background-color: var(--background-color);
+            margin: 0;
+            padding: 0;
+            color: #333;
+        }
+        h1 {
+            text-align: center;
+            margin: 20px 0;
+        }
+        .card {
+            background-color: var(--card-bg);
+            padding: 20px;
+            border-radius: var(--border-radius);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            margin: 10px auto;
+            max-width: 800px;
+        }
+        .card h2 {
+            font-size: 18px;
+            margin-top: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--primary-color);
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 4px;
+        }
+        select, input[type="text"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .btn {
+            display: inline-block;
+            padding: 8px 16px;
+            margin: 8px 4px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            color: #fff;
+        }
+        .btn-primary {
+            background-color: var(--primary-color);
+        }
+        .btn-accent {
+            background-color: var(--accent-color);
+            color: #000;
+        }
+        .btn-danger {
+            background-color: #e53935;
+        }
+        /* Students list styling */
+        .students-list ul {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+        .students-list li {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 8px;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            margin-bottom: 4px;
+            background-color: #fff;
+        }
+        .students-list li span {
+            flex-grow: 1;
+            margin-right: 8px;
+        }
+        .students-list button {
+            border: none;
+            background-color: #e53935;
+            color: #fff;
+            border-radius: 4px;
+            padding: 4px 8px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        /* Responsive for mobile */
+        @media (max-width: 600px) {
+            .btn {
+                width: 100%;
+                margin: 4px 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>إدارة الطلاب والصفوف</h1>
+    <div style="text-align: right; margin: 0 20px 10px;">
+        <a href="index.html" style="color: var(--accent-color); text-decoration: none; font-size: 14px;">العودة إلى البوابة</a>
+    </div>
+    <!-- إدارة الصفوف -->
+    <div class="card">
+        <h2><span class="material-icons">class</span> إدارة الصفوف</h2>
+        <div class="form-group">
+            <label for="adminSectionSelect">القسم</label>
+            <select id="adminSectionSelect">
+                <option value="">اختر القسم</option>
+                <option value="بنين">بنين</option>
+                <option value="بنات">بنات</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="adminGradeSelect">الشعبة الصفية</label>
+            <select id="adminGradeSelect">
+                <option value="">اختر الشعبة</option>
+            </select>
+            <button class="btn btn-accent" id="renameGradeBtn" style="margin-top: 8px;">تعديل اسم الصف</button>
+        </div>
+        <div class="form-group">
+            <button class="btn btn-primary" id="addGradeBtn">إضافة صف جديد</button>
+        </div>
+    </div>
+    <!-- إدارة الطلاب -->
+    <div class="card">
+        <h2><span class="material-icons">people</span> إدارة الطلاب</h2>
+        <div class="form-group">
+            <label for="newStudentInput">أضف طالب جديد</label>
+            <input type="text" id="newStudentInput" placeholder="اسم الطالب" />
+            <button class="btn btn-accent" id="addStudentBtn" style="margin-top: 8px;">إضافة طالب</button>
+        </div>
+        <div class="students-list" id="studentsList"></div>
+    </div>
+    <!-- حفظ -->
+    <div class="card" style="text-align: center;">
+        <button class="btn btn-primary" id="saveAdminBtn">حفظ التغييرات</button>
+    </div>
+    <script>
+        // البيانات الافتراضية للطلاب والصفوف عند عدم وجود بيانات في LocalStorage
+        const defaultStudentsData = {
+            "بنين": {
+                "سابع": [
+                    "احمد عبد الرحمن حريدين",
+                    "احمد فادي كيوان",
+                    "احمد محمد حريدين",
+                    "احمد ميلاد جابر",
+                    "اسلام احمد حريدين",
+                    "اليمان نورس كيوان",
+                    "ايهم امير الناطور",
+                    "ايهم معروف الناطور",
+                    "تركي رضا المطوي",
+                    "تيم باسل السبسبي",
+                    "حمزة موسى النجار",
+                    "خالد محمد البعير",
+                    "ذيب فراس أبو نقطة",
+                    "رامي عصام الرشدان",
+                    "رسلان منار الخشمان",
+                    "زيدون هشام الزعبي",
+                    "عبد الاله محمد خير حريدين",
+                    "عصام غالب الطيبي",
+                    "عمر بلال حريدين",
+                    "عمر خالد الزعبي",
+                    "مجد مفلح الربداوي",
+                    "محمد عصام الربداوي",
+                    "محمد منيف عيسى الزعبي",
+                    "محمود بشار حريدين",
+                    "مصطفى امجد عسكر",
+                    "مصطفى حسن قطمة",
+                    "نجيب محمد رضا الحريري",
+                    "نعيم احمد البردان",
+                    "همام باسل النابلسي",
+                    "يحيى احمد قطمة",
+                    "يمان مجد البردان"
+                ],
+                "ثامن": [
+                    "المعتصم بالله عرفا الشعابين",
+                    "المنتصر بالله محمد البردان",
+                    "أحمد حسان الربداوي",
+                    "أحمد خالد الصلخدي",
+                    "أسامة حيان الربداوي",
+                    "تقي الدين عدنان العدوي",
+                    "حسن سامر الحايك",
+                    "حمزة أحمد حريدين",
+                    "حمزة عبدالرحمن حريدين",
+                    "حمزة يوسف كيوان",
+                    "سراج أحمد حريدين",
+                    "سليمان إياد الربداوي",
+                    "شادي غسان عويمر",
+                    "عبادة عبدالرحيم البردان",
+                    "عبد الإله أحمد الصالح",
+                    "عبدالإله محمد خير حريدين",
+                    "عبدالرحمن فراس أبو نقطة",
+                    "عبدالرحمن نعيم الرواشدة",
+                    "عبدالله عبداللطيف الحوراني",
+                    "عبدالله محمود السرحان",
+                    "عبدالله وسيم السرحان",
+                    "عز الدين علي كيوان",
+                    "عمر عصام الربداوي",
+                    "عمر محمود الحايك",
+                    "عمران علاء الدين البيطاري",
+                    "عمران محمد خير حريدين",
+                    "محمد سفيان الصبحات",
+                    "محمد عرفا الشعابين",
+                    "محمود محمد البردان",
+                    "مصطفى محمود الناطور",
+                    "يحيى مراد الزعبي"
+                ],
+                "عاشر": [
+                    "احمد سالم الزعبي",
+                    "احمد محمد البردان",
+                    "احمد محمد خير البردان",
+                    "الحارث بلال أبو شنب",
+                    "اياس معاوية الزعبي",
+                    "إبراهيم فادي أبو رمحين",
+                    "إبراهيم محمد الزعبي",
+                    "براء محمد حريدين",
+                    "تميم عبد القادر حسون",
+                    "تيم خلدون الرشدان",
+                    "رامي  ياسر حريدين",
+                    "ريان محمد قنطرية",
+                    "زياد ماهر الحوراني",
+                    "زين قاسم أبو شنب",
+                    "شادي احمد الناطور",
+                    "عبد الرحمن بشير أبو نقطة",
+                    "عبد الرحمن محمد العدوي",
+                    "عبد الله عبد السلام الزعبي",
+                    "عبد الله عمار الربداوي",
+                    "عبد الله منذر كيوان",
+                    "عبد الله نورس كيوان",
+                    "عبيدة رافع الرشدان",
+                    "محمد انس حريدين",
+                    "محمد عماد الربداوي",
+                    "محمد عمار الزعبي",
+                    "محمد نديم حريدين",
+                    "محمد هشام حريدين",
+                    "محمد يمان عصام الزعبي",
+                    "محمود اشرف المصري",
+                    "معتصم ياسر حريدين",
+                    "معن هشام الزعبي",
+                    "همام عصام الربداوي",
+                    "وسام محمود الربداوي",
+                    "ياسين مازن المستريحي",
+                    "يزن معاوية الصبحات"
+                ],
+                "حادي عشر": [
+                    "احمد عبد اللطيف الحوراني",
+                    "انس زياد المعاني",
+                    "تيم ياسر حريدين",
+                    "خالد مشهور البردان",
+                    "عبادة عبدالرحمن البردان",
+                    "عبد الهادي محمد البردان",
+                    "عمار ياسر كيوان",
+                    "قاسم محمد يوسف",
+                    "معتز محمد خير الحوراني"
+                ]
+            },
+            "بنات": {
+                "سابع": [
+                    "ألمى أحمد البردان",
+                    "آية وسيم الخليل",
+                    "آية لؤي الرشدان",
+                    "إسلام معاوية الصبحات",
+                    "أسراء مازن الخليل",
+                    "بتول خالد شريتح",
+                    "بيسان إبراهيم العدوي",
+                    "تولين محمد أبو نقطة",
+                    "جنى منصور الحريدين",
+                    "جوري أحمد الصياح",
+                    "حلا موفق الزعبي",
+                    "دانا محمد نور السرحان",
+                    "رقية محمد خير حريدين",
+                    "رنده إياد الربداوي",
+                    "ريحان عبد المجيد العدوي",
+                    "ريماس خالد البردان",
+                    "رؤى مروان الربداوي",
+                    "ساره محمود السرحان",
+                    "ساره يوسف البردان",
+                    "شفاء محمد البردان",
+                    "شوق محمد حريدين",
+                    "لين محمد أبو نقطة",
+                    "لما محمد البردان",
+                    "لارا محمد زين البردان",
+                    "هاجر غسان الحايك"
+                ],
+                "ثامن": [
+                    "آية أمجد حريدين",
+                    "آية محمد الربداوي",
+                    "إباء باسل الصياح",
+                    "تيماء محمد خير البيطاري",
+                    "جنى محمد نور حريدين",
+                    "رفيف محمد البردان",
+                    "رفيف محمد خير العدوي",
+                    "رنا محمد خير البردان",
+                    "رنيم مالك الزعبي",
+                    "ريماس قاسم النجار",
+                    "شام مدين البردان",
+                    "شهد عبدالغفور العدوي",
+                    "ليمار منصور أبو نقطة",
+                    "مرام يزن البيطاري",
+                    "مريم محمد نور الزعبي",
+                    "مريم محمود العدوي",
+                    "ملاك حسين الزعبي",
+                    "مرح عامر الخليل",
+                    "نور حسان القيسي",
+                    "هويام مراد الزعبي",
+                    "ودق أحمد العدوي",
+                    "يقين رياض كيوان"
+                ],
+                "عاشر": [
+                    "آلاء محمود البردان",
+                    "أسماء أحمد البردان",
+                    "آية فراس ريشان الزعبي",
+                    "آلاء محمود السرحان",
+                    "بانه منير حريدين",
+                    "بروج قتادة حريدين",
+                    "تسنيم محمد عبدالله",
+                    "جنى محمد حريدين",
+                    "حكمت رائد الزعبي",
+                    "رنيم يزن البيطاري",
+                    "رهف محمد الزعبي",
+                    "ريم خلدون المستريحي",
+                    "رغد محمد برمو",
+                    "راما حسان الربداوي",
+                    "شذى عبدالرحيم شريتح",
+                    "صبا أسامة حريدين",
+                    "غزل محمد البردان",
+                    "ليلى محمد البردان"
+                ],
+                "حادي عشر": [
+                    "إسراء أحمد البردان",
+                    "آلاء عيسى الزعبي",
+                    "آية وسيم السرحان",
+                    "رنيم حسان الربداوي",
+                    "روعة محمود البردان",
+                    "رؤى وسيم كيوان",
+                    "رقية سميح البردان",
+                    "سارة عبدالرحيم الحوراني",
+                    "صفا أنس القهوجي",
+                    "صبى محمد الملحي",
+                    "ضحى محمود الحايك",
+                    "غزل علاء عواد",
+                    "ليمار عمر الناطور",
+                    "هبة آصف البردان"
+                ]
+            }
+        };
+
+        // تحميل أو تهيئة بيانات الطلاب من LocalStorage
+        let studentsData;
+        try {
+            const stored = localStorage.getItem('studentsData');
+            studentsData = stored ? JSON.parse(stored) : JSON.parse(JSON.stringify(defaultStudentsData));
+        } catch (err) {
+            studentsData = JSON.parse(JSON.stringify(defaultStudentsData));
+        }
+
+        const adminSectionSelect = document.getElementById('adminSectionSelect');
+        const adminGradeSelect = document.getElementById('adminGradeSelect');
+        const studentsListDiv = document.getElementById('studentsList');
+        const newStudentInput = document.getElementById('newStudentInput');
+
+        // Populate grade options based on selected section
+        function populateGrades() {
+            const section = adminSectionSelect.value;
+            adminGradeSelect.innerHTML = '<option value="">اختر الشعبة</option>';
+            if (section && studentsData[section]) {
+                Object.keys(studentsData[section]).forEach(key => {
+                    const opt = document.createElement('option');
+                    opt.value = key;
+                    opt.textContent = key;
+                    adminGradeSelect.appendChild(opt);
+                });
+            }
+            // Clear students list when changing section
+            studentsListDiv.innerHTML = '';
+        }
+
+        // Populate students list
+        function populateStudents() {
+            studentsListDiv.innerHTML = '';
+            const section = adminSectionSelect.value;
+            const grade = adminGradeSelect.value;
+            if (section && grade && studentsData[section] && studentsData[section][grade]) {
+                const ul = document.createElement('ul');
+                studentsData[section][grade].forEach((student, index) => {
+                    const li = document.createElement('li');
+                    const span = document.createElement('span');
+                    span.textContent = student;
+                    const delBtn = document.createElement('button');
+                    delBtn.textContent = 'حذف';
+                    delBtn.classList.add('btn-danger');
+                    delBtn.addEventListener('click', () => {
+                        if (confirm('هل أنت متأكد من حذف الطالب؟')) {
+                            studentsData[section][grade].splice(index, 1);
+                            populateStudents();
+                        }
+                    });
+                    li.appendChild(span);
+                    li.appendChild(delBtn);
+                    ul.appendChild(li);
+                });
+                studentsListDiv.appendChild(ul);
+            }
+        }
+
+        // Add new grade
+        function addGrade() {
+            const section = adminSectionSelect.value;
+            if (!section) {
+                alert('اختر القسم أولاً');
+                return;
+            }
+            const newGrade = prompt('أدخل اسم الصف الجديد').trim();
+            if (!newGrade) return;
+            // Avoid duplicates
+            if (studentsData[section][newGrade]) {
+                alert('الصف موجود مسبقاً');
+                return;
+            }
+            studentsData[section][newGrade] = [];
+            populateGrades();
+            adminGradeSelect.value = newGrade;
+            populateStudents();
+        }
+
+        // Rename current grade
+        function renameGrade() {
+            const section = adminSectionSelect.value;
+            const oldName = adminGradeSelect.value;
+            if (!section || !oldName) {
+                alert('اختر القسم والشعبة أولاً');
+                return;
+            }
+            const newName = prompt('أدخل الاسم الجديد للشعبة', oldName).trim();
+            if (!newName || newName === oldName) return;
+            // Prevent duplicate grade name
+            if (studentsData[section][newName]) {
+                alert('يوجد شعبة بنفس الاسم');
+                return;
+            }
+            // Copy students and delete old key
+            studentsData[section][newName] = studentsData[section][oldName];
+            delete studentsData[section][oldName];
+            populateGrades();
+            adminGradeSelect.value = newName;
+            populateStudents();
+        }
+
+        // Add student
+        function addStudent() {
+            const section = adminSectionSelect.value;
+            const grade = adminGradeSelect.value;
+            const name = newStudentInput.value.trim();
+            if (!section || !grade) {
+                alert('اختر القسم والشعبة أولاً');
+                return;
+            }
+            if (!name) return;
+            if (!studentsData[section][grade]) {
+                studentsData[section][grade] = [];
+            }
+            studentsData[section][grade].push(name);
+            newStudentInput.value = '';
+            populateStudents();
+        }
+
+        // Save data to LocalStorage
+        function saveData() {
+            try {
+                localStorage.setItem('studentsData', JSON.stringify(studentsData));
+                alert('تم حفظ التغييرات بنجاح');
+            } catch (err) {
+                alert('حدث خطأ أثناء الحفظ');
+            }
+        }
+
+        // Event listeners
+        adminSectionSelect.addEventListener('change', () => {
+            populateGrades();
+        });
+        adminGradeSelect.addEventListener('change', () => {
+            populateStudents();
+        });
+        document.getElementById('addGradeBtn').addEventListener('click', addGrade);
+        document.getElementById('renameGradeBtn').addEventListener('click', renameGrade);
+        document.getElementById('addStudentBtn').addEventListener('click', addStudent);
+        document.getElementById('saveAdminBtn').addEventListener('click', saveData);
+
+        // Initialize
+        populateGrades();
+    </script>
+</body>
+</html>
