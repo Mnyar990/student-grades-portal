@@ -283,12 +283,9 @@
         </div>
         <div class="form-group">
             <label for="classSelect">الشعبة الصفية</label>
+            <!-- سيتم ملء خيارات الشعبة الصفية ديناميكياً بناءً على القسم المختار -->
             <select id="classSelect">
                 <option value="">اختر الشعبة</option>
-                <option value="سابع">سابع</option>
-                <option value="ثامن">ثامن</option>
-                <option value="عاشر">عاشر</option>
-                <option value="حادي عشر">حادي عشر</option>
             </select>
         </div>
         <div class="form-group">
@@ -684,6 +681,33 @@
             });
             renderTable();
         }
+
+        /**
+         * Populate the class (grade) select options dynamically based on the selected section.
+         * This reads the keys of studentsData[section] and builds option elements. If no
+         * section is chosen, only the placeholder remains. This ensures that newly added
+         * grades via the admin page appear in the dropdown without hard-coding options.
+         */
+        function populateClassSelect() {
+            const sectionSelect = document.getElementById('sectionSelect');
+            const classSelect = document.getElementById('classSelect');
+            if (!classSelect || !sectionSelect) return;
+            // Reset options: always start with placeholder
+            classSelect.innerHTML = '';
+            const placeholder = document.createElement('option');
+            placeholder.value = '';
+            placeholder.textContent = 'اختر الشعبة';
+            classSelect.appendChild(placeholder);
+            const section = sectionSelect.value;
+            if (section && studentsData && studentsData[section]) {
+                Object.keys(studentsData[section]).forEach(grade => {
+                    const opt = document.createElement('option');
+                    opt.value = grade;
+                    opt.textContent = grade;
+                    classSelect.appendChild(opt);
+                });
+            }
+        }
         // Render table
         function renderTable() {
             const header = document.getElementById('tableHeader');
@@ -955,8 +979,17 @@
         document.getElementById('sendBtn').addEventListener('click', sendToWhatsApp);
         // Try to restore saved data on load
         document.addEventListener('DOMContentLoaded', () => {
+            // Restore previous grades table if saved
             restoreData();
+            // Populate class dropdown based on current section
+            populateClassSelect();
+            // Show initial step
             showStep(1);
+        });
+
+        // Update class selection dynamically when section changes
+        document.getElementById('sectionSelect').addEventListener('change', () => {
+            populateClassSelect();
         });
 
         // Clear cell option in context menu
